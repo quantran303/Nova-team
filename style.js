@@ -1,0 +1,207 @@
+
+
+/* CSS tùy chỉnh cho các hiệu ứng */
+body {
+    scroll-behavior: smooth;
+}
+.page {
+    /* Mặc định ẩn các trang */
+    display: none;
+}
+.page.active {
+    /* Hiển thị trang được chọn */
+    display: block;
+    animation: reveal 0.7s ease-in-out;
+}
+@keyframes reveal {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+/* Hiệu ứng cho thanh điều hướng khi cuộn */
+.nav-scrolled {
+    background-color: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    backdrop-filter: blur(8px);
+}
+/* Hiệu ứng cho phần "cuộn xuống" ở trang chủ */
+.reveal-on-scroll {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+.reveal-on-scroll.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+/* Tùy chỉnh màu sắc cho các nút Quiz */
+.quiz-option:hover {
+    transform: scale(1.03);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
+
+/* Hiệu ứng đèn lồng/lời nguyện */
+.wish-lantern {
+    position: absolute;
+    padding: 0.75rem 1.25rem;
+    border-radius: 9999px;
+    background-color: #FFFBEB; /* pastel-yellow */
+    color: #D97706; /* theme-earth */
+    border: 1px solid #FDE68A;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2);
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 600;
+    white-space: nowrap;
+    animation: float-up 6s ease-in-out forwards;
+    will-change: transform, opacity;
+}
+
+
+
+// Mobile toggle
+document.getElementById('mobile-toggle')?.addEventListener('click', function(){
+    const m = document.getElementById('mobile-menu');
+    m.classList.toggle('hidden');
+});
+
+// Smooth reveal on scroll
+const observer = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+        if(e.isIntersecting){ e.target.classList.add('is-visible'); observer.unobserve(e.target); }
+    });
+},{threshold:0.12});
+document.querySelectorAll('.reveal-on-scroll').forEach(el=>observer.observe(el));
+
+// Modal tour
+const tourModal = document.getElementById('tour-modal');
+const tourForm = document.getElementById('tour-form');
+function openTourModal(title){
+    document.getElementById('modal-title').innerText = title||'Đặt tour';
+    tourModal.classList.remove('hidden');
+    tourModal.classList.add('flex');
+}
+function closeTourModal(){
+    tourModal.classList.add('hidden');
+    tourModal.classList.remove('flex');
+}
+if(tourForm){
+    tourForm.addEventListener('submit', (e)=>{
+        e.preventDefault();
+        closeTourModal();
+        showAlert('Đã gửi đăng ký. Chúng tôi sẽ liên hệ lại.');
+        tourForm.reset();
+    });
+}
+
+// Alert helper
+const alertModal = document.getElementById('alert-modal');
+function showAlert(msg){
+    if(!alertModal) return;
+    document.getElementById('alert-message').innerText = msg;
+    alertModal.classList.remove('hidden');
+    setTimeout(()=> alertModal.classList.add('hidden'), 3000);
+}
+
+// Quiz data (short)
+const quizData = [
+    {question:'Bạn thích điều gì khi đi du lịch?', options:[
+            {text:'Chụp ảnh',scores:{fire:2}},
+            {text:'Tĩnh tâm',scores:{water:2}},
+            {text:'Khám phá',scores:{earth:2}},
+        ]},
+    {question:'Bạn thích không gian nào?', options:[
+            {text:'Hang động',scores:{water:2}},
+            {text:'Làng nghề',scores:{wood:2}},
+            {text:'Bình minh',scores:{fire:2}},
+        ]}
+];
+const quizResults = {
+    wood:{title:'Hành Mộc',icon:'🌿',description:'Bạn yêu thiên nhiên.'},
+    fire:{title:'Hành Hỏa',icon:'🔥',description:'Bạn nhiệt huyết.'},
+    water:{title:'Hành Thủy',icon:'🌊',description:'Bạn trầm lắng.'},
+    earth:{title:'Hành Thổ',icon:'🌾',description:'Bạn thực tế.'}
+};
+let qIndex=0; let scores={wood:0,fire:0,water:0,earth:0};
+function startQuiz(){
+    qIndex=0; scores={wood:0,fire:0,water:0,earth:0};
+    document.getElementById('quiz-start').classList.add('hidden');
+    document.getElementById('quiz-question-area').classList.remove('hidden');
+    displayQuestion();
+}
+function displayQuestion(){
+    const q = quizData[qIndex];
+    document.getElementById('question-progress').innerText = `Câu ${qIndex+1}/${quizData.length}`;
+    document.getElementById('question-text').innerText = q.question;
+    const opts = document.getElementById('options-container');
+    opts.innerHTML='';
+    q.options.forEach(o=>{
+        const b = document.createElement('button');
+        b.className='btn-outline w-full text-left block';
+        b.innerText = o.text;
+        b.onclick = ()=> selectAnswer(o.scores);
+        opts.appendChild(b);
+    });
+}
+function selectAnswer(s){
+    Object.keys(s).forEach(k=> scores[k] = (scores[k]||0)+s[k]);
+    qIndex++;
+    if(qIndex<quizData.length) displayQuestion();
+    else showQuizResult();
+}
+function showQuizResult(){
+    document.getElementById('quiz-question-area').classList.add('hidden');
+    document.getElementById('quiz-result-area').classList.remove('hidden');
+    const winner = Object.keys(scores).reduce((a,b)=> scores[a]>scores[b]?a:b);
+    const r = quizResults[winner] || {title:'-',icon:'',description:'-'};
+    document.getElementById('result-title').innerText = r.title;
+    document.getElementById('result-icon').innerText = r.icon;
+    document.getElementById('result-description').innerText = r.description;
+}
+
+// Wish wall simple effect
+function sendWish(){
+    const input = document.getElementById('wish-input');
+    const txt = input.value.trim();
+    if(!txt) return showAlert('Bạn chưa viết điều ước!');
+    const container = document.getElementById('wish-wall-container');
+    const el = document.createElement('div');
+    el.className='wish-lantern';
+    el.innerText = txt;
+    el.style.left = Math.max(10, Math.random()*(container.offsetWidth-120)) + 'px';
+    container.appendChild(el);
+    setTimeout(()=> el.remove(), 6000);
+    input.value='';
+}
+
+// Expose openTourModal globally for buttons
+window.openTourModal = openTourModal;
+window.startQuiz = startQuiz;
+window.sendWish = sendWish;
+window.closeTourModal = closeTourModal;
+window.showAlert = showAlert;
+function showPage(pageId, clickedLink = null, isMobile = false) {
+    const section = document.getElementById(pageId);
+    if (!section) return;
+
+    // Cập nhật nav active
+    navLinks.forEach(link => {
+        link.classList.remove('active', 'font-bold', 'text-theme-primary');
+        link.classList.add('text-gray-600');
+    });
+
+    if (clickedLink) {
+        clickedLink.classList.add('active', 'font-bold', 'text-theme-primary');
+        clickedLink.classList.remove('text-gray-600');
+    }
+
+    // Đóng menu mobile
+    if (isMobile) mobileMenu.classList.add('hidden');
+
+    // Scroll mượt đến đúng section
+    section.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+    });
+
+    // Ngăn reload link
+    if (event) event.preventDefault();
+}
